@@ -1,44 +1,54 @@
-# DevOps Coursework 2
+# CI/CD Pipeline: Node.js \u2192 Docker \u2192 Jenkins \u2192 Kubernetes
 
-This project is a simple Node.js web server that serves as a basic example for a DevOps pipeline. The server responds to HTTP requests on port 8080 with a plain text message.
+A small Node.js web service used to demonstrate a full containerised delivery pipeline: build, test, containerise, and ship to a Kubernetes deployment \u2014 all automated through Jenkins.
 
-## Getting Started
+The application itself is intentionally simple; the point of this repo is the pipeline around it.
 
-To run this application locally, you will need to have Docker installed.
+## What it does
 
-1.  **Build the Docker image:**
+The server responds to HTTP requests on port 8080 with a plain text message identifying the container that served the request \u2014 useful for confirming a rollout has actually reached the new version.
 
-    Open your terminal in the project root and run the following command to build the Docker image:
+## Pipeline overview
 
-    ```bash
-    docker build -t coursework2 .
-    ```
+Defined in the `Jenkinsfile`, the pipeline runs three stages on every push to `main`:
 
-2.  **Run the Docker container:**
+1. **Build** \u2014 checks out the source and builds a Docker image (`jscott1997/coursework2`).
+2. **Test** \u2014 runs basic checks against the build.
+3. **Deploy** \u2014 logs in to Docker Hub and pushes the new image, then connects to a production server over SSH and updates the `coursework2` Kubernetes deployment to roll out the new version.
 
-    After the image is built, you can run the application in a Docker container with this command:
+```
+push to main \u2192 Jenkins build \u2192 Docker image \u2192 Docker Hub \u2192 SSH to server \u2192 kubectl rollout
+```
 
-    ```bash
-    docker run -p 8080:8080 -d coursework2
-    ```
+## Tech Stack
 
-3.  **Access the application:**
+- **Node.js** \u2014 application server
+- **Docker** \u2014 containerisation
+- **Jenkins** \u2014 CI/CD orchestration
+- **Kubernetes** \u2014 deployment target
+- **Docker Hub** \u2014 image registry
 
-    You can now access the application by navigating to `http://localhost:8080` in your web browser or by using a tool like `curl`:
+## Running it locally
 
-    ```bash
-    curl http://localhost:8080
-    ```
+Requires Docker.
 
-    You should see a response similar to this:
-    `DevOps Coursework 2! | Running on: <container_hostname> | v=3`
+```bash
+# Build the image
+docker build -t coursework2 .
 
-## Deployment
+# Run it
+docker run -p 8080:8080 -d coursework2
 
-This project is configured with a continuous integration and deployment (CI/CD) pipeline using Jenkins. The pipeline is defined in the `Jenkinsfile` and performs the following stages:
+# Check it's alive
+curl http://localhost:8080
+```
 
-1.  **Build**: The pipeline checks out the source code from the `main` branch and builds a Docker image named `jscott1997/coursework2`.
-2.  **Test**: A placeholder test stage is run to ensure the application passes basic checks.
-3.  **Deploy**:
-    *   The pipeline logs into Docker Hub and pushes the newly built Docker image.
-    *   It then connects to a production server via SSH and updates the Kubernetes deployment (`coursework2`) to use the new Docker image, effectively deploying the new version of the application.
+Expected response:
+
+```
+DevOps Coursework 2! | Running on: <container_hostname> | v=3
+```
+
+## About
+
+Built for the DevOps module of my BSc (Hons) Computing at Glasgow Caledonian University, as a hands-on exercise in continuous delivery to a real orchestration target rather than a toy example.
